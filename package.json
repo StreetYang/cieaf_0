@@ -1,0 +1,11 @@
+{
+  "name": "cieaf_0",
+  "version": "0.1.4",
+  "description": "a web widget loader",
+  "main": "index.js",
+  "keywords": [
+    "js loader"
+  ],
+  "author": "Street Yang",
+  "license": "ISC"
+}
