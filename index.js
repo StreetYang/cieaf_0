@@ -14,7 +14,11 @@ const __DEFINE__ = {
 
     // 全局配置
     let config = {
-        rootMap: { def: ROOT }
+        rootMap: { def: ROOT },
+        error(pack) {
+            console.error('>>> ' + NS, `load [${pack.name}] fail`);
+            console.log(pack);
+        }
     };
 
     // 不重复的标识
@@ -33,9 +37,9 @@ const __DEFINE__ = {
     }
 
     // Array.prototype.at
-    function at(src, index) {
-        if (src instanceof Array)
-            return src[index];
+    function at(target, index) {
+        if (target instanceof Array)
+            return target[index];
     }
 
     // 标签转命令，制作参数 args:[['packname packname args ...', ' ', ...], arg1, ...]
@@ -99,17 +103,14 @@ const __DEFINE__ = {
                 root = config.rootMap[root] || root;
             }
 
-            // 就绪状态
-            t.ready = false;
+            /** 状态 0:初始化 1:解析中 2:完成 3:错误替换 -1:失败 */
+            t.status = 0;
 
             // 包就绪队列
             t.queue = [];
 
             // 包的资源
-            t.src = undefined;
-
-            // 失败
-            t.fail = fail;
+            t.source = undefined;
 
             let url, v;
             switch (mode) {
@@ -136,50 +137,67 @@ const __DEFINE__ = {
             }
 
             url += `index.js?_=` + v;
+
+            t.url = url;
             log('load', name, url, t);
 
-            document.head.appendChild(Object.assign(
-                document.createElement('script'),
-                {
-                    src: url,
-                    type: mode === 'dev' ? 'module' : 'text/javascript',
-                    async: 'async',
-                    onload() {
-                        t.src = initers.shift().call(null, t) || {};
-                        t.ready = true;
+            const el = document.createElement('script');
+            Object.assign(el, {
+                src: url,
+                type: mode === 'dev' ? 'module' : 'text/javascript',
+                async: 'async',
+                onload() {
+                    t.status = 1;
+                    t.source = initers.shift().call(null, t) || {};
+                    t.status = 2;
 
-                        log('onload', name, t.src);
+                    log('onload', name, t.source);
+                    t.run();
+                    el.remove();
+                },
+                onerror() {
+                    (typeof config.error === 'function') && config.error(t);
+
+                    t.status = -1;
+
+                    // 执行自定义错误处理方法，如果有返回值，用返回替换结果，值继续执行
+                    const type3 = typeof fail;
+                    if (type3 === 'function')
+                        fail = fail(t);
+                    if (fail !== undefined) {
+                        log('fail.source', name, fail);
+                        t.source = fail;
+                        t.status = 3;
                         t.run();
-                    },
-                    onerror(e) {
-                        log('onerror', name, e);
-
-                        // 执行自定义错误处理方法，如果有返回值，用返回替换结果，值继续执行
-                        if (typeof t.fail === 'function') {
-                            const r = t.src = t.fail(t);
-                            log('fail.src', name, r);
-                            if (r) {
-                                t.ready = true;
-                                t.run();
-                            }
-                        }
                     }
+
+                    if (t.status === -1)
+                        t.queue = undefined;
+
+                    el.remove();
                 }
-            ));
+            })
+            document.head.appendChild(el);
         }
 
         add(fn, runId) {
+            const status = this.status;
+            if (status < 0) {
+                (typeof config.error === 'function') && config.error(this);
+                return;
+            }
+
             if (runId)
                 fn.runId = runId;
             this.queue.push(fn);
-            this.ready && this.run();
+            (status > 1) && this.run();
         }
 
         run() {
-            const { queue, src } = this;
+            const { queue, source } = this;
             while (queue.length) {
                 const f = queue.shift();
-                const r = f.call(null, src);
+                const r = f.call(null, source);
                 if (f.runId) {
                     const type = `run${f.runId}`;
                     this.emit(type, r);
@@ -238,7 +256,10 @@ const __DEFINE__ = {
             if (exp.raw) {
                 const arr = makeArgs([...arguments]);
                 const pname = arr.shift();
-                return main.call(null, pname, arr);
+                if (pname)
+                    return main.call(null, pname, arr);
+                else
+                    return main();
             }
 
             // 批量载入
@@ -277,14 +298,8 @@ const __DEFINE__ = {
     }
 
     Object.assign(main, {
-        version: '0.2.0',
+        version: '0.2.2',
         config,
         packs,
-        useLog,
-        log,
-        Pack,
-        Event
     })
 })('CIEAF');
-
-export default window.CIEAF;
