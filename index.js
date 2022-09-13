@@ -17,7 +17,7 @@ const __DEFINE__ = {
         rootMap: { def: ROOT }
     };
 
-    // 递增数
+    // 不重复的标识
     let newId = 0;
 
     // 已加载的包
@@ -32,10 +32,25 @@ const __DEFINE__ = {
         useLog && console.log('>>> ' + NS, ...arg);
     }
 
-    // 低版本浏览器木有Array.prototype.at
+    // Array.prototype.at
     function at(src, index) {
         if (src instanceof Array)
             return src[index];
+    }
+
+    // 标签转命令，制作参数 args:[['packname packname args ...', ' ', ...], arg1, ...]
+    function makeArgs(args) {
+        const tpl = [...args.shift()];      // 模板数组只读，需要转成新数组
+        const cmd = tpl.shift().trim();
+        const arr = cmd.split(/\s+/);
+        while (args.length) {
+            arr.push(args.shift());
+            const c = tpl.shift().trim();
+            if (c) {
+                arr.push(...c.split(/\s+/));
+            }
+        }
+        return arr;
     }
 
     // 事件
@@ -93,28 +108,34 @@ const __DEFINE__ = {
             // 包的资源
             t.src = undefined;
 
-            let url;
+            // 失败
+            t.fail = fail;
+
+            let url, v;
             switch (mode) {
                 case 'prod':
                     // 生产环境
                     url = `${root}${name}/`;
+                    v = parseInt(Date.now() / 36e5).toString(36);
                     break;
 
                 case 'uat':
                     // 用户测试环境
                     url = `${root}${name}/uat/`;
+                    v = parseInt(Date.now() / 6e4).toString(36);
                     break;
 
                 case 'dev':
                     // 开发环境
                     url = `${root}`;
+                    v = parseInt(Date.now() / 1e3).toString(36);
                     break;
 
                 default:
                     throw 'mode needs prod|uat|dev';
             }
 
-            url += `index.js?_v=${Date.now().toString(36)}`;
+            url += `index.js?_=` + v;
             log('load', name, url, t);
 
             document.head.appendChild(Object.assign(
@@ -134,8 +155,8 @@ const __DEFINE__ = {
                         log('onerror', name, e);
 
                         // 执行自定义错误处理方法，如果有返回值，用返回替换结果，值继续执行
-                        if (typeof fail === 'function') {
-                            const r = t.src = fail(t);
+                        if (typeof t.fail === 'function') {
+                            const r = t.src = t.fail(t);
                             log('fail.src', name, r);
                             if (r) {
                                 t.ready = true;
@@ -171,7 +192,6 @@ const __DEFINE__ = {
     // 主要方法
     const main = window[NS] = function (exp, success, fail) {
         const type = typeof exp;
-        const argArr = [...arguments];
 
         // 查看全局配置
         if (type === 'undefined') {
@@ -180,44 +200,35 @@ const __DEFINE__ = {
 
         // 加载包
         if (type === 'string') {
-            let args = null;
-
-            // 语句转化为命令
-            const mch = exp.match(/([\S]+)\s+(\w+)(.+)?/);
-            if (mch) {
-                exp = mch[1];
-                success = mch[2];
-                const arg = mch[3]?.trim();
-                args = arg ? [arg] : argArr.slice(1);
-            }
-
             const name = at(exp.match(/^\w+/), 0);
             const pack = packs[name] = packs[name] || new Pack(exp, fail);
             const type2 = typeof success;
 
-            // 执行方法
+            // 标准载入
             if (type2 === 'function') {
                 pack.add(success);
             }
 
-            // 执行命令
-            if (type2 === 'string') {
-                const runId = ++newId;
-                return new Promise(next => {
-                    pack.on(`run${runId}`, e => next(e));
-                    if (!args)
-                        args = argArr.slice(2)
-                    pack.add(ps => ps[success](...args), runId);
-                });
+            // 载入后执行
+            if (type2 === 'string')
+                success = success.split(/\s+/);
+            if (success instanceof Array) {
+                const fname = success.shift();
+                if (fname) {
+                    const runId = ++newId;
+                    return new Promise(next => {
+                        pack.on(`run${runId}`, e => next(e));
+                        pack.add(ps => ps[fname](...success), runId);
+                    });
+                }
             }
 
-            return pack;
-        }
+            const pm = new Promise(next => {
+                pack.add(ps => next(ps));
+            });
+            pm.pack = pack;
 
-        // 初始化包（包内调用）
-        if (type === 'function') {
-            initers.push(exp);
-            return;
+            return pm;
         }
 
         // 批量加载包
@@ -225,26 +236,29 @@ const __DEFINE__ = {
 
             // 标签字符串语法，转换为指令模式
             if (exp.raw) {
-                return main(exp[0], ...(argArr.slice(1)));
+                const arr = makeArgs([...arguments]);
+                const pname = arr.shift();
+                return main.call(null, pname, arr);
             }
 
-            const r = [];
+            // 批量载入
+            const pms = exp.map(n => main(n));
+            const pm = new Promise(next => {
+                Promise.all(pms).then(r => {
+                    if (typeof success === 'function')
+                        success(r);
+                    next(r)
+                })
+            })
+            pm.packs = pms.map(n => n.pack);
 
-            let len = exp.length;
-            const fn = (typeof success === 'function')
-                ? () => {
-                    if (--len) return;
-                    success.call(null, exp.map(n => packs[n].src));
-                } : null;
+            return pm;
+        }
 
-            exp.forEach(n => {
-                const name = at(exp.match(/^\w+/), 0);
-                const pack = packs[name] = packs[name] || new Pack(n, fail);
-                fn && pack.add(fn);
-                r.push(pack);
-            });
-
-            return r;
+        // 初始化包（包内调用）
+        if (type === 'function') {
+            initers.push(exp);
+            return;
         }
 
         // 全局配置
@@ -263,21 +277,13 @@ const __DEFINE__ = {
     }
 
     Object.assign(main, {
-        version: '0.1.4',
+        version: '0.2.0',
         config,
         packs,
         useLog,
         log,
         Pack,
-        Event,
-        load(exp) {
-            return new Promise((success, fail) => {
-                main(exp, src => success(src), pack => fail(pack));
-            })
-        },
-        token() {
-            return btoa(`${config.appid}-${config.uCode}`);
-        },
+        Event
     })
 })('CIEAF');
 
