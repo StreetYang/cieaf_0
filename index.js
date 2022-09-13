@@ -94,15 +94,6 @@ const __DEFINE__ = {
             // 名称
             const name = t.name = at(exp.match(/^\w+/), 0);
 
-            // 模式
-            const mode = t.mode = at(exp.match(/\#(\w+)/), 1) || config.mode || 'prod';
-
-            // 来源
-            let root = t.root = at(exp.match(/\@(.+)$/), 1) || config.root || 'def';
-            if (config.rootMap) {
-                root = config.rootMap[root] || root;
-            }
-
             /** 状态 0:初始化 1:解析中 2:完成 3:错误替换 -1:失败 */
             t.status = 0;
 
@@ -111,6 +102,19 @@ const __DEFINE__ = {
 
             // 包的资源
             t.source = undefined;
+
+            // 预置资源
+            if (fail === true)
+                return;
+
+            // 模式
+            const mode = t.mode = at(exp.match(/\#(\w+)/), 1) || config.mode || 'prod';
+
+            // 来源
+            let root = t.root = at(exp.match(/\@(.+)$/), 1) || config.root || 'def';
+            if (config.rootMap) {
+                root = config.rootMap[root] || root;
+            }
 
             let url, v;
             switch (mode) {
@@ -279,6 +283,17 @@ const __DEFINE__ = {
         // 初始化包（包内调用）
         if (type === 'function') {
             initers.push(exp);
+
+            // 预置资源
+            if (typeof success === 'string') {
+                const name = at(success.match(/^\w+/), 0);
+                const pack = packs[name] = new Pack(success, true);
+                pack.status = 1;
+                pack.source = initers.shift().call(null, pack) || {};
+                pack.status = 2;
+                pack.run();
+            }
+
             return;
         }
 
@@ -298,7 +313,7 @@ const __DEFINE__ = {
     }
 
     Object.assign(main, {
-        version: '0.2.2',
+        version: '0.3.0',
         config,
         packs,
     })

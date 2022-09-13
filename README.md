@@ -56,5 +56,8 @@ CIEAF('name1', null, pack=>{console.warn(pack)})    // 参数3可自定义错误
 CIEAF('name2', ps=>ps.show(1), {show(x){alert(x)}}) // 参数3非undefined时做为替换对象，如果是方法执行后判定。
 
 // 构建部件
-CIEAF(pack => console.log(pack));
+CIEAF(pack => ({ show(p) { alert(x) } }));
+
+// 预置部件
+CIEAF(pack => ({ show(p) { alert(x) } }), 'packname');
 ```
