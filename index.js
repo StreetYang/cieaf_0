@@ -152,7 +152,9 @@ const __DEFINE__ = {
                 async: 'async',
                 onload() {
                     t.status = 1;
-                    t.source = initers.shift().call(null, t) || {};
+                    const initer = initers.shift();
+                    if (initer)
+                        t.source = initer.call(null, t);
                     t.status = 2;
 
                     log('onload', name, t.source);
@@ -289,7 +291,11 @@ const __DEFINE__ = {
                 const name = at(success.match(/^\w+/), 0);
                 const pack = packs[name] = new Pack(success, true);
                 pack.status = 1;
-                pack.source = initers.shift().call(null, pack) || {};
+
+                const initer = initers.shift();
+                if (initer)
+                    t.source = initer.call(null, pack);
+
                 pack.status = 2;
                 pack.run();
             }
@@ -313,7 +319,7 @@ const __DEFINE__ = {
     }
 
     Object.assign(main, {
-        version: '0.3.0',
+        version: '0.3.1',
         config,
         packs,
     })
