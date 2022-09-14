@@ -319,8 +319,9 @@ const __DEFINE__ = {
     }
 
     Object.assign(main, {
-        version: '0.3.1',
+        version: '0.3.2',
         config,
         packs,
+        log,
     })
 })('CIEAF');
