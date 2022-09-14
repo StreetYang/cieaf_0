@@ -1,8 +1,3 @@
-const __DEFINE__ = {
-    ROOT: '//cieaf.bba/cieaf-plugin/',
-    DOC: 'https://cieaf.bba/cieaf-plugin/'
-};
-
 (NS => {
     'use strict'
 
@@ -224,6 +219,20 @@ const __DEFINE__ = {
 
         // 加载包
         if (type === 'string') {
+            exp = exp.trim();
+
+            // 带空格，处理为str + arr模型
+            if (exp.includes(' ')) {
+                const arr = exp.split(/\s+/);
+                exp = arr.shift();
+
+                let i = 0;
+                success = arr.map(n => {
+                    if (n !== '?') return n;
+                    return arguments[++i];
+                });
+            }
+
             const name = at(exp.match(/^\w+/), 0);
             const pack = packs[name] = packs[name] || new Pack(exp, fail);
             const type2 = typeof success;
@@ -319,7 +328,7 @@ const __DEFINE__ = {
     }
 
     Object.assign(main, {
-        version: '0.3.2',
+        version: '0.3.3',
         config,
         packs,
         log,
