@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>cieaf test</title>
+    <script src="../index.js"></script>
+    <script>
+        CIEAF({ root: './' });
+    </script>
+    <style>
+        html {
+            font-family: consolas;
+            color: #9CDCFE;
+            background-color: #031417;
+        }
+
+        .line {
+            position: relative;
+            min-height: 24px;
+            line-height: 24px;
+            margin: 0;
+            padding: 0 20px;
+            font-size: 12px;
+            font-family: consolas;
+        }
+
+        .code:hover {
+            cursor: pointer;
+            background: no-repeat center left #336699;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAJFJREFUOE+1k7ENgzAQRf8bLBI1iyRQRKJiByokCpiDhjZFlkhLxRZGloyEENjEiKv9ns/3z+hicZHXPQJjjJFUAHWow90OnMCyHZD5JCGBZT+SXsBvT3RGYLlJ0hPot5KzgoUrgWot+VcwAGms4A00sU94AN+YIQ4ugfEoSt8MWiCPXaQEsPkH656/ELx2dWAGzdU5EbRc0q8AAAAASUVORK5CYII=');
+        }
+
+        .line::after {
+            color: #f1fab4;
+            content: attr(data-com);
+        }
+
+        .code::after {
+            padding: 0 0 0 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <script id="code" type="text/pain">
+        // 使用配置 (undefined) => object
+        CIEAF()                                 // 返回配置
+             
+        // 进行配置 (object, ?boolean) => object
+        CIEAF({ appId: 'APP000' })              // 追加配置
+        CIEAF({ appId: 'APP000' }, true)        // 替换配置
+        CIEAF({ appId: 'APP000' }, false)       // 追加配置
+        
+        // 配置
+        CIEAF.config.mode = 'prod'                          // 修改默认版本 'prod|uat|dev'
+        CIEAF.config.root = './'                            // 修改默认服务地址，支持完整地址
+        CIEAF.config.rootMap.def = './'                     // 修改服务映射，支持完整地址
+        CIEAF.config.error = pack => console.warn(pack)     // 自定义全局错误处理
+        
+        // 载入资源 (string) => PromiseWithPacks<PackResult>
+        CIEAF('demo')                                       // 载入demo
+        CIEAF('demo#prod')                                  // 载入prod版本的demo prod|uat|dev
+        CIEAF('demo@def')                                   // 载入def服务下的demo
+        CIEAF('demo@./)                                     // 载入"./"服务下的demo，支持完整地址
+        CIEAF('demo#prod@def')                              // 载入prod版本,def服务下的demo
+        CIEAF`demo`                                         // 命令模式
+        
+        // 载入资源，执行方法
+        CIEAF('demo', ps => ps.show('hello'))               // (string, Function<PackResult>:any) => PromiseWithPack<demoResult>
+        CIEAF('demo', 'show')                               // (string, string) => Promise<showResult>
+        CIEAF('demo', ['show', 'hello'])                    // (string, Array<any>) => Promise<showResult>
+        CIEAF('demo show hello')                            // 命令模式
+        CIEAF('demo show ?', 'hello')                       // 命令模式：插值任意类型参数
+        CIEAF`demo show hello`                              // 命令模式：模板字符串
+        CIEAF`demo show ${'hello'}`                         // 命令模式：模板字符串，插值任意类型参数
+        CIEAF('demo').then(ps => ps.show('hello'))          // Promise模式
+        (await CIEAF('demo')).show('hello')                 // await语法糖
+        
+        // 批量载入，都成功后执行
+        CIEAF(['demo', 'demo2'])                                        // (Array<string>) => PromiseWithPacks<ArrResult>
+        CIEAF(['demo', 'demo2'], pss => pss[0].show('hello'))           // (Array<string>, Function<PackResult>:any) => PromiseWithPacks<ArrResult>
+        CIEAF(['demo', 'demo2']).then(pss => pss[0].show('hello'))      // Promise模式
+        (await CIEAF(['demo', 'demo']))[0].show('hello')                // await语法糖
+        
+        // 参数3：错误处理和资源替换 object|function
+        CIEAF('name1', null, pack => { console.warn(pack) })            // 自定义错误方法
+        CIEAF('name2', ps => ps.show(1), { show(x) { alert(x) } })      // 自定义错误方法返回非undefined时，做为替换对象，如果是方法执行后判定。
+        
+        // 构建和预置资源
+        CIEAF(pack => ({ show(p) { alert(x) } }))                       // 构建资源
+        CIEAF(pack => ({ show(p) { alert(x) } }), 'packname')           // 构建资源并预置到packname下
+        
+        // 其他
+        CIEAF.version           // 查看版本
+        CIEAF.config            // 查看配置
+        CIEAF.packs             // 查看已经加载的包
+        CIEAF(true)             // 开启调试
+        CIEAF(false)            // 关闭调试
+        CIEAF.log(...)          // 使用内置log，只在CIEAF(true)时打印
+    </script>
+
+    <div id="list">
+
+    </div>
+
+    <script>
+        function init() {
+            const codes = document.querySelector('#code').innerText;
+            const list = document.querySelector('#list');
+            const lines = codes.split('\n').map(n => {
+                const line = document.createElement('pre');
+                line.classList.add('line');
+
+                const com = n.match(/\/\/\s.+$/);
+                if (com) {
+                    n = n.replace(com[0], '');
+                    line.setAttribute('data-com', com[0].trim())
+                }
+
+                const code = n.trimStart();
+                const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+
+                if (code) {
+                    line.classList.add('code');
+                    line.innerText = code;
+                    line.onclick = _ => {
+                        let f;
+                        if (code.includes('await')) {
+                            f = new AsyncFunction(code);
+                        } else {
+                            f = new Function('return ' + code);
+                        }
+                        console.log(f());
+                    }
+                }
+
+                return line;
+            });
+
+            lines.forEach(el => {
+
+                list.appendChild(el);
+            })
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

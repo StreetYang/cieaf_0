@@ -47,7 +47,7 @@ const __DEFINE__ = {
 
     // get packname / packmode / packroot
     const at = (src, i) => (src instanceof Array) ? src[i] : undefined;
-    const getName = exp => at(exp.match(RGX_NAME), 0);
+    const getName = exp => at(exp.match(RGX_NAME), 1);
     const getMode = exp => at(exp.match(RGX_MODE), 1);
     const getRoot = exp => at(exp.match(RGX_ROOT), 1);
 
@@ -121,9 +121,7 @@ const __DEFINE__ = {
 
             // pack root
             let root = t.root = getRoot(exp) || config.root || 'def';
-            if (config.rootMap) {
-                root = config.rootMap[root] || root;
-            }
+            root = config.rootMap[root] || root;
 
             // make url
             let url, v;
@@ -313,13 +311,13 @@ const __DEFINE__ = {
 
             // preset pack
             if (typeof success === 'string') {
-                const name = getName(exp);
+                const name = getName(success);
                 const pack = packs[name] = new Pack(success, true);
                 pack.status = 1;
 
                 const initer = initers.shift();
                 if (initer)
-                    t.source = initer.call(null, pack);
+                    pack.source = initer.call(null, pack);
 
                 pack.status = 2;
                 pack.run();
@@ -344,7 +342,7 @@ const __DEFINE__ = {
     }
 
     Object.assign(main, {
-        version: '0.4.0',
+        version: '0.4.1',
         config,
         packs,
         log,
