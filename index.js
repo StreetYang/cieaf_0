@@ -340,7 +340,7 @@
     }
 
     Object.assign(main, {
-        version: '0.5.0',
+        version: '0.5.1',
         config,
         packs,
         log,

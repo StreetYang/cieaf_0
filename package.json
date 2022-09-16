@@ -1,7 +1,7 @@
 {
   "name": "cieaf_0",
-  "version": "0.5.0",
-  "description": "a web widget loader",
+  "version": "0.5.1",
+  "description": "a js source loader",
   "main": "index.js",
   "repository": {
     "type": "git",
