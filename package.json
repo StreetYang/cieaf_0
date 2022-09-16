@@ -1,6 +1,6 @@
 {
   "name": "cieaf_0",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "a web widget loader",
   "main": "index.js",
   "repository": {
@@ -11,5 +11,5 @@
     "js loader"
   ],
   "author": "Street Yang",
-  "license": "ISC"
+  "license": "MIT"
 }
