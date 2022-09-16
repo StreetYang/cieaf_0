@@ -4,41 +4,6 @@
 <head>
     <title>cieaf test</title>
     <script src="../index.js"></script>
-    <script>
-        CIEAF({ host: 'dev' });
-    </script>
-    <style>
-        html {
-            font-family: consolas;
-            color: #9CDCFE;
-            background-color: #031417;
-        }
-
-        .line {
-            position: relative;
-            min-height: 24px;
-            line-height: 24px;
-            margin: 0;
-            padding: 0 20px;
-            font-size: 12px;
-            font-family: consolas;
-        }
-
-        .code:hover {
-            cursor: pointer;
-            background: no-repeat center left #336699;
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAJFJREFUOE+1k7ENgzAQRf8bLBI1iyRQRKJiByokCpiDhjZFlkhLxRZGloyEENjEiKv9ns/3z+hicZHXPQJjjJFUAHWow90OnMCyHZD5JCGBZT+SXsBvT3RGYLlJ0hPot5KzgoUrgWot+VcwAGms4A00sU94AN+YIQ4ugfEoSt8MWiCPXaQEsPkH656/ELx2dWAGzdU5EbRc0q8AAAAASUVORK5CYII=');
-        }
-
-        .line::after {
-            color: #f1fab4;
-            content: attr(data-com);
-        }
-
-        .code::after {
-            padding: 0 0 0 24px;
-        }
-    </style>
 </head>
 
 <body>
@@ -99,15 +64,14 @@
         CIEAF.log(...)          // 使用内置log，只在CIEAF(true)时打印
     </script>
 
-    <div id="list">
-
-    </div>
+    <div id="list"></div>
 
     <script>
         function init() {
             const codes = document.querySelector('#code').innerText;
             const list = document.querySelector('#list');
-            const lines = codes.split('\n').map(n => {
+            
+            codes.split('\n').forEach(n => {
                 const line = document.createElement('pre');
                 line.classList.add('line');
 
@@ -134,16 +98,46 @@
                     }
                 }
 
-                return line;
+                list.appendChild(line);
             });
-
-            lines.forEach(el => {
-                list.appendChild(el);
-            })
         }
 
+        CIEAF({ host: 'dev' });
         init();
     </script>
+
+    <style>
+        html {
+            font-family: consolas;
+            color: #9CDCFE;
+            background-color: #031417;
+        }
+
+        .line {
+            position: relative;
+            min-height: 24px;
+            line-height: 24px;
+            margin: 0;
+            padding: 0 20px;
+            font-size: 12px;
+            font-family: consolas;
+        }
+
+        .code:hover {
+            cursor: pointer;
+            background: no-repeat center left #336699;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAJFJREFUOE+1k7ENgzAQRf8bLBI1iyRQRKJiByokCpiDhjZFlkhLxRZGloyEENjEiKv9ns/3z+hicZHXPQJjjJFUAHWow90OnMCyHZD5JCGBZT+SXsBvT3RGYLlJ0hPot5KzgoUrgWot+VcwAGms4A00sU94AN+YIQ4ugfEoSt8MWiCPXaQEsPkH656/ELx2dWAGzdU5EbRc0q8AAAAASUVORK5CYII=');
+        }
+
+        .line::after {
+            color: #f1fab4;
+            content: attr(data-com);
+        }
+
+        .code::after {
+            padding: 0 0 0 24px;
+        }
+    </style>
 </body>
 
 </html>

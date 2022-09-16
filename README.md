@@ -13,4 +13,4 @@ CIEAF(...)
 ```
 
 # API
-> ./test/index.html
+> ./demo/index.html
