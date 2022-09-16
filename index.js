@@ -1,29 +1,28 @@
 /*!
- * CIEAF 0.4.0
+ * CIEAF 0.5.x
+ * Copyright 2022 StreetYang
  * Released under MIT License
  */
-
-const __DEFINE__ = {
-    ROOT: '//cieaf.bba/cieaf-plugin/',
-    DOC: 'https://cieaf.bba/cieaf-plugin/'
-};
 
 (NS => {
     'use strict'
 
     if (window[NS]) return;
 
-    const ROOT = __DEFINE__.ROOT;
-    const DOC = __DEFINE__.DOC;
-
     const RGX_NAME = /^(.+?)(#|@|\s|$)/;
     const RGX_MODE = /\#(\w+)/;
-    const RGX_ROOT = /\@(.+)$/;
+    const RGX_HOST = /\@(.+)$/;
     const RGX_SPACE = /\s+/;
 
     // global config
     let config = {
-        rootMap: { def: ROOT },
+        mode: 'prod',
+        host: 'bba',
+        hosts: {
+            dev: './',
+            bba: '//cieaf.bba/cieaf-plugin/',
+            '24-8': '//c.24-8.cn/'
+        },
         error(pack) {
             console.error(`>>> ${NS}`, `load [${pack.name}] fail`);
             console.log(pack);
@@ -45,11 +44,11 @@ const __DEFINE__ = {
         useLog && console.log(`>>> ${NS}`, ...arg);
     }
 
-    // get packname / packmode / packroot
+    // get packname / packmode / packhost
     const at = (src, i) => (src instanceof Array) ? src[i] : undefined;
     const getName = exp => at(exp.match(RGX_NAME), 1);
     const getMode = exp => at(exp.match(RGX_MODE), 1);
-    const getRoot = exp => at(exp.match(RGX_ROOT), 1);
+    const getHost = exp => at(exp.match(RGX_HOST), 1);
 
     // convert tag function arguments
     // args: [['packname packname args ...', ' ', ...], arg1, ...]
@@ -117,30 +116,30 @@ const __DEFINE__ = {
             if (fail === true) return;
 
             // pack mode => prod / uat / dev
-            const mode = t.mode = getMode(exp) || config.mode || 'prod';
+            const mode = t.mode = getMode(exp) || config.mode;
 
-            // pack root
-            let root = t.root = getRoot(exp) || config.root || 'def';
-            root = config.rootMap[root] || root;
+            // pack host
+            let host = t.host = getHost(exp) || config.host;
+            host = config.hosts[host] || host;
 
             // make url
             let url, v;
             switch (mode) {
                 case 'prod':
                     // product env
-                    url = `${root}${name}/`;
+                    url = `${host}${name}/`;
                     v = parseInt(Date.now() / 36e5).toString(36);
                     break;
 
                 case 'uat':
                     // user-test env
-                    url = `${root}${name}/uat/`;
+                    url = `${host}${name}/uat/`;
                     v = parseInt(Date.now() / 6e4).toString(36);
                     break;
 
                 case 'dev':
                     // development env
-                    url = `${root}`;
+                    url = `${host}`;
                     v = parseInt(Date.now() / 1e3).toString(36);
                     break;
 
@@ -337,12 +336,11 @@ const __DEFINE__ = {
         if (type === 'boolean') {
             useLog = exp;
             console.dir(main);
-            log(`Document: ${DOC}`);
         }
     }
 
     Object.assign(main, {
-        version: '0.4.1',
+        version: '0.5.0',
         config,
         packs,
         log,
