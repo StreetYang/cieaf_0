@@ -2,12 +2,12 @@
 <html>
 
 <head>
-    <title>cieaf test</title>
+    <title>demo</title>
     <script src="../index.js"></script>
 </head>
 
 <body>
-    <script id="code" type="text/pain">
+    <script id="codeEl" type="text/pain">
         // 使用配置 (undefined) => object
         CIEAF()                                 // 返回配置
              
@@ -64,46 +64,39 @@
         CIEAF.log(...)          // 使用内置log，只在CIEAF(true)时打印
     </script>
 
-    <div id="list"></div>
-
+    <div id="listEl"></div>
     <script>
-        function init() {
-            const codes = document.querySelector('#code').innerText;
-            const list = document.querySelector('#list');
-            
-            codes.split('\n').forEach(n => {
-                const line = document.createElement('pre');
-                line.classList.add('line');
-
-                const com = n.match(/\/\/\s.+$/);
-                if (com) {
-                    n = n.replace(com[0], '');
-                    line.setAttribute('data-com', com[0].trim())
-                }
-
-                const code = n.trimStart();
-                const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
-
-                if (code) {
-                    line.classList.add('code');
-                    line.innerText = code;
-                    line.onclick = _ => {
-                        let f;
-                        if (code.includes('await')) {
-                            f = new AsyncFunction(code);
-                        } else {
-                            f = new Function('return ' + code);
-                        }
-                        console.log(f());
-                    }
-                }
-
-                list.appendChild(line);
-            });
-        }
-
         CIEAF({ host: 'dev' });
-        init();
+
+        codeEl.innerText.split('\n').forEach(n => {
+            const line = document.createElement('pre');
+            line.classList.add('line');
+
+            const com = n.match(/\/\/\s.+$/);
+            if (com) {
+                n = n.replace(com[0], '');
+                line.setAttribute('data-com', com[0].trim())
+            }
+
+            const code = n.trimStart();
+            const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+
+            if (code) {
+                line.classList.add('code');
+                line.innerText = code;
+                line.onclick = _ => {
+                    let f;
+                    if (code.includes('await')) {
+                        f = new AsyncFunction(code);
+                    } else {
+                        f = new Function('return ' + code);
+                    }
+                    console.log(f());
+                }
+            }
+
+            listEl.appendChild(line);
+        })
     </script>
 
     <style>
@@ -123,15 +116,15 @@
             font-family: consolas;
         }
 
+        .line::after {
+            color: #f1fab4;
+            content: attr(data-com);
+        }
+
         .code:hover {
             cursor: pointer;
             background: no-repeat center left #336699;
             background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAJFJREFUOE+1k7ENgzAQRf8bLBI1iyRQRKJiByokCpiDhjZFlkhLxRZGloyEENjEiKv9ns/3z+hicZHXPQJjjJFUAHWow90OnMCyHZD5JCGBZT+SXsBvT3RGYLlJ0hPot5KzgoUrgWot+VcwAGms4A00sU94AN+YIQ4ugfEoSt8MWiCPXaQEsPkH656/ELx2dWAGzdU5EbRc0q8AAAAASUVORK5CYII=');
-        }
-
-        .line::after {
-            color: #f1fab4;
-            content: attr(data-com);
         }
 
         .code::after {
